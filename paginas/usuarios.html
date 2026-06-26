@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios</title>
+    <link rel="icon" type="imagen" href="../imagenes/Tickets..png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+    <main class="container mt-5">
+        <h1 class="text-center mb-4">Usuarios Registrados</h1>
+        <div class="internos-contenedor">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Nombre y Apellido</th>
+                        <th scope="col">Teléfono</th>
+                        <th scope="col"><img src="../imagenes/cargando.png" alt="" width="30px"></th>
+                    </tr>
+                </thead>
+
+                <tbody id="usuarios-body">
+                    <tr>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <!-- Modal para ver Números -->
+    <div id="modal-ver-numeros" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-titulo-usuario">Números Reservados</h2>
+
+            <p id="modal-alias-usuario"
+                style="text-align: center; font-style: italic; color: #a47c44; margin-top: -5px; margin-bottom: 15px; font-size: 1.5rem;">
+            </p>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Números de Boleta</label>
+                    <div id="modal-ver-numeros-container" class="badge-container">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal-ver-pago">Estado del Pago</label>
+                    <select id="modal-ver-pago" required>
+                        <option value="pagado">Ya esta cancelado</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn-recordatorio-modal" id="btn-recordatorio">Recordatorio</button>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancelar" id="btn-modal-ver-cerrar">Cancelar</button>
+                <button type="button" class="btn-guardar" id="btn-modal-ver-guardar">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/usuarios.js"></script>
+</body>
+
+</html>
