@@ -6,7 +6,7 @@ Para garantizar la máxima velocidad, estabilidad y un despliegue profesional en
 
 Características y Módulos del Sistema.
 
-•	Tablero Numérico Interactivo (Frontend Dinámico): Interfaz limpia y responsiva que permite al comprador o vendedor seleccionar múltiples números con un solo toque, cambiando de estado visual (Disponible/Dorado) al instante sin recargar la página.
+-	Tablero Numérico Interactivo (Frontend Dinámico): Interfaz limpia y responsiva que permite al comprador o vendedor seleccionar múltiples números con un solo toque, cambiando de estado visual (Disponible/Dorado) al instante sin recargar la página.
 
 •	Control de Tiempos de Alquiler (Filtro de Seguridad Java): El sistema cuenta con un middleware interno en Spring Boot que valida en cada milisegundo la fecha límite de uso. Si el plazo expira, bloquea la plataforma inmediatamente con un estado 403 Forbidden, desplegando una pantalla de suspensión con redirección a soporte.
 
