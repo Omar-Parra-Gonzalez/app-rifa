@@ -1,4 +1,106 @@
+// =========================================================================
+// CONTROL DE ACCESO Y LOGIN (Se ejecuta primero al cargar la página)
+// =========================================================================
+
 document.addEventListener("DOMContentLoaded", () => {
+    // Al cargar la página verificamos si ya tiene el pase de entrada
+    const sesionActiva = localStorage.getItem("acceso_rifa_valido");
+
+    if (!sesionActiva) {
+        mostrarModalLogin();
+    } else {
+        // Si ya está logueado, arranca el tablero y las APIs directamente
+        inicializarAplicacion();
+    }
+});
+
+// Función para dibujar el modal oscuro en pantalla completa
+function mostrarModalLogin() {
+    const modalHTML = `
+        <div id="modal-login-overlay" style="
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #0f141c; display: flex; align-items: center; justify-content: center;
+            z-index: 100000; font-family: sans-serif; padding: 20px; box-sizing: border-box;
+        ">
+            <div style="
+                background: #1e2530; padding: 30px; border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.5); width: 100%; max-width: 400px;
+                text-align: center; border: 1px solid #3a4659;
+            ">
+                <h2 style="color: #e6b055; margin-bottom: 10px; font-size: 1.8rem;">🎟️ Acceso al Sistema</h2>
+                <p style="color: #98a6b8; font-size: 0.9rem; margin-bottom: 25px;">Ingrese las credenciales aprovadas por el administrador para activar su sesión.</p>
+                <div style="margin-bottom: 15px; text-align: left;">
+                    <label style="color: #cbd5e1; display: block; margin-bottom: 5px; font-size: 0.85rem;">Usuario</label>
+                    <input type="text" id="login-user" placeholder="Ej: Acceso rifa" style="
+                        width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #3a4659;
+                        background: #0f141c; color: #fff; box-sizing: border-box; outline: none;
+                    ">
+                </div>
+                <div style="margin-bottom: 25px; text-align: left;">
+                    <label style="color: #cbd5e1; display: block; margin-bottom: 5px; font-size: 0.85rem;">Contraseña</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" style="
+                        width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #3a4659;
+                        background: #0f141c; color: #fff; box-sizing: border-box; outline: none;
+                    ">
+                </div>
+                <button id="btn-ingresar-rifa" style="
+                    width: 100%; padding: 12px; background: #e6b055; color: #0f141c;
+                    border: none; border-radius: 6px; font-weight: bold; font-size: 1rem;
+                    cursor: pointer; transition: background 0.3s;
+                ">Iniciar Sesión</button>
+                
+                <p id="login-error-msg" style="color: #ff6b6b; font-size: 0.85rem; margin-top: 15px; display: none;"></p>
+            </div>
+        </div>
+    `;
+
+    // se inserta el modal directamente al cuerpo del HTML
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // se detecta el evento click del botón de ingresar
+    document.getElementById("btn-ingresar-rifa").addEventListener("click", procesarLogin);
+}
+
+async function procesarLogin() {
+    const usuario = document.getElementById("login-user").value;
+    const password = document.getElementById("login-pass").value;
+    const errorMsg = document.getElementById("login-error-msg");
+
+    const URL_BAKEND = "http://localhost:8080/api/auth/login";
+
+    try {
+        const respuesta = await fetch(URL_BAKEND, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuario: usuario, password: password })
+        });
+
+        const resultado = await respuesta.json();
+
+        if (respuesta.ok && (resultado.autorizado === undefined || resultado.autorizado)) {
+            localStorage.setItem("acceso_rifa_valido", "true");
+
+            // Se remueve el modal de la pantalla para que pueda usar la app
+            document.getElementById("modal-login-overlay").remove();
+
+            // ACTIVA LA APLICACIÓN DE UNA VEZ TRAS EL LOGIN EXITOSO
+            inicializarAplicacion();
+        } else {
+            errorMsg.innerText = resultado.mensaje || "Credenciales inválidas";
+            errorMsg.style.display = "block";
+        }
+    } catch (error) {
+        errorMsg.innerText = "Error de conexión con el servidor de seguridad.";
+        errorMsg.style.display = "block";
+    }
+}
+
+
+// =========================================================================
+// LÓGICA PRINCIPAL DE LA APLICACIÓN (Protegida por el inicio de sesión)
+// =========================================================================
+
+function inicializarAplicacion() {
     const grid = document.querySelector(".grid");
     const btnAgregar = document.querySelector(".btn-agregar");
 
@@ -20,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const API_URL_OCUPADOS = "http://localhost:8080/api/rifas/ocupados";
     const API_URL_REGISTRAR = "http://localhost:8080/api/rifas/registrar";
 
-    // 🆕 FUNCIÓN AUXILIAR PARA PINTAR EL MODAL DE BLOQUEO DE UNA
+    // FUNCIÓN AUXILIAR PARA PINTAR EL MODAL DE BLOQUEO 
     const mostrarPantallaBloqueo = () => {
         document.body.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff6ec; display: flex; align-items: center; justify-content: center; z-index: 99999; font-family: sans-serif; text-align: center; padding: 20px; box-sizing: border-box;">
@@ -32,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <a href="https://wa.me/573184935249?text=Hola,%20deseo%20renovar%20el%20tiempo%20de%20mi%20página" 
                        target="_blank"
                        style="display: inline-block; padding: 14px 30px; background: #25d366; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
-                       💬 Comunicarse con Soporte
+                        💬 Comunicarse con Soporte
                     </a>
                 </div>
             </div>
@@ -43,20 +145,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const todosLosDivs = grid.querySelectorAll("div");
     fetch(API_URL_OCUPADOS)
         .then(response => {
-            // 🆕 LUGAR 1: Si Java manda 403 al cargar el tablero, bloqueamos de una
             if (response.status === 403) {
+                // Si el tiempo expiró, destruimos el token para obligarlo a loguearse de nuevo en la reactivación
+                localStorage.removeItem("acceso_rifa_valido");
                 mostrarPantallaBloqueo();
                 throw new Error("Aplicación bloqueada en el servidor.");
             }
             return response.json();
         })
         .then(numerosOcupados => {
-            // 'numerosOcupados' es un arreglo de strings enviado por Java: ["05", "14", "82"]
             todosLosDivs.forEach(div => {
                 const numeroTexto = div.textContent.trim();
                 if (numerosOcupados.includes(numeroTexto)) {
                     div.classList.add("ocupado");
-                    div.classList.remove("seleccionado"); // Por seguridad
+                    div.classList.remove("seleccionado");
                 }
             });
         })
@@ -64,37 +166,30 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error al cargar los números ocupados desde el servidor:", error);
         });
 
-    // SELECCIÓN LIBRE, Pintar dorado o desmarcar al instante sin bloquear la pantalla
+    // SELECCIÓN LIBRE
     grid.addEventListener("click", (e) => {
-        // Verificamos que sea un div numérico y que no esté ocupado (gris)
         if (e.target.tagName === "DIV" && !e.target.classList.contains("ocupado")) {
-            // toggle pone la clase si no está, y la quita si ya la tiene.
             e.target.classList.toggle("seleccionado");
         }
     });
 
-    // MOSTRAR MODAL, se ejecuta al oprimir el botón de Registrar
+    // MOSTRAR MODAL REGISTRO
     btnAgregar.addEventListener("click", () => {
-        // Capturar lo que esté marcado en dorado en ese preciso instante
         casillasSeleccionadas = document.querySelectorAll(".grid div.seleccionado");
         if (casillasSeleccionadas.length === 0) {
             alert("Por favor, selecciona primero los números en el tablero.");
             return;
         }
 
-        // Convertir los divs seleccionados a un arreglo de texto
         numerosElegidos = Array.from(casillasSeleccionadas).map(div => div.textContent.trim());
 
-        // Limpiar el contenido de inputs
         inputNombre.value = "";
         inputTelefono.value = "";
 
-        // Limpiar la casilla del alias para la nueva compra
         if (inputAlias) {
             inputAlias.value = "";
         }
 
-        // Generar cápsulas visuales para los números escogidos en el modal
         containerNumeros.innerHTML = "";
         numerosElegidos.forEach(num => {
             const badge = document.createElement("span");
@@ -103,31 +198,26 @@ document.addEventListener("DOMContentLoaded", () => {
             containerNumeros.appendChild(badge);
         });
 
-        // Mostrar el modal agregando la clase 'activo'
         modal.classList.add("activo");
         inputNombre.focus();
     });
 
-    // FUNCIONES DE CIERRE DEL MODAL
     const cerrarModal = () => {
         modal.classList.remove("activo");
     };
 
-    // Evitar que se escriban caracteres que no sean números en tiempo real
     inputTelefono.addEventListener("input", (e) => {
-        // Reemplaza cualquier carácter que NO sea un dígito (\D) por un texto vacío
         e.target.value = e.target.value.replace(/\D/g, "");
     });
+
     btnCancelar.addEventListener("click", cerrarModal);
 
-    // Cerrar al hacer clic fuera del contenido del modal
     modal.addEventListener("click", (e) => {
         if (e.target === modal) {
             cerrarModal();
         }
     });
 
-    // Cerrar al hacer clic en el modal de éxito (cualquier parte)
     modalExito.addEventListener("click", () => {
         modalExito.classList.remove("activo");
         if (modalExito.dataset.timerId) {
@@ -136,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // REGISTRAR DATOS, al hacer clic en Guardar dentro del modal (Hacia el Backend)
+    // REGISTRAR DATOS
     btnGuardar.addEventListener("click", () => {
         const nombreVal = inputNombre.value.trim();
         const telefonoVal = inputTelefono.value.trim();
@@ -158,6 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
             inputTelefono.focus();
             return;
         }
+
         const pagoVal = document.getElementById("modal-pago").value;
         const datosCompra = {
             nombre: nombreVal,
@@ -167,10 +258,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alias: aliasVal
         };
 
-        // Desactiva temporalmente el botón para evitar doble clic accidental
         btnGuardar.disabled = true;
 
-        // Enviar la información a Spring Boot
         fetch(API_URL_REGISTRAR, {
             method: "POST",
             headers: {
@@ -179,8 +268,8 @@ document.addEventListener("DOMContentLoaded", () => {
             body: JSON.stringify(datosCompra)
         })
             .then(response => {
-                // Si Java manda 403 al intentar registrar una boleta, bloqueamos
                 if (response.status === 403) {
+                    localStorage.removeItem("acceso_rifa_valido");
                     mostrarPantallaBloqueo();
                     throw new Error("Aplicación bloqueada en el servidor.");
                 }
@@ -190,28 +279,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 return response.json();
             })
             .then(data => {
-
-                // Cambiamos los números del tablero a estado ocupado permanente (gris)
                 casillasSeleccionadas.forEach(div => {
                     div.classList.remove("seleccionado");
                     div.classList.add("ocupado");
                 });
                 cerrarModal();
 
-                // Mostrar modal de éxito
                 modalExito.classList.add("activo");
                 const timerExito = setTimeout(() => {
                     modalExito.classList.remove("activo");
                 }, 2500);
                 modalExito.dataset.timerId = timerExito;
+
                 const textoCodificado = encodeURIComponent(data.textoWhatsApp);
                 const urlWhatsApp = `https://api.whatsapp.com/send?phone=57${data.telefono}&text=${textoCodificado}`;
-                console.log("URL FINAL CORREGIDA:");
-                console.log(urlWhatsApp);
                 window.open(urlWhatsApp, '_blank');
             })
             .catch(error => {
-                // 🆕 Si el error viene de nuestro bloqueo manual, no saques el alert ordinario
                 if (error.message !== "Aplicación bloqueada en el servidor.") {
                     alert("Hubo un error al registrar: " + error.message);
                     casillasSeleccionadas.forEach(div => div.classList.add("seleccionado"));
@@ -227,7 +311,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (botonCaptura) {
         botonCaptura.addEventListener("click", () => {
-            // Modo compacto en el body
             document.body.classList.add("modo-captura-activo");
             setTimeout(() => {
                 const contenedorRifa = document.querySelector(".rifa-container");
@@ -237,21 +320,34 @@ document.addEventListener("DOMContentLoaded", () => {
                     backgroundColor: "#fff6ec",
                     useCORS: true
                 }).then(canvas => {
-                    // Convierte el lienzo en un archivo JPG de alta calidad (0.9)
                     const urlImagen = canvas.toDataURL("image/jpeg", 0.9);
-                    // Crea un enlace invisible para forzar la descarga
                     const enlaceDescarga = document.createElement("a");
                     enlaceDescarga.download = "numeros-disponibles-goipro.jpg";
                     enlaceDescarga.href = urlImagen;
                     enlaceDescarga.click();
-                    // Quita el modo captura para que la app vuelva a la normalidad
                     document.body.classList.remove("modo-captura-activo");
                 }).catch(error => {
                     console.error("Error al generar el JPG:", error);
-                    // Por seguridad, si falla, restablece la pantalla
                     document.body.classList.remove("modo-captura-activo");
                 });
-            }, 300);
+            }, 100);
         });
     }
-});
+    // =========================================================================
+    // REVISIÓN AUTOMÁTICA EN TIEMPO REAL (Evita dejar la página abierta para siempre)
+    // =========================================================================
+
+    // Ejecuta una revisión en segundo plano cada minuto (60000 milisegundos)
+    setInterval(() => {
+        fetch(API_URL_OCUPADOS)
+            .then(response => {
+                if (response.status === 403) {
+                    localStorage.removeItem("acceso_rifa_valido");
+                    mostrarPantallaBloqueo();
+                }
+            })
+            .catch(error => {
+                console.error("Error en la validación en segundo plano:", error);
+            });
+    }, 60000);
+}
