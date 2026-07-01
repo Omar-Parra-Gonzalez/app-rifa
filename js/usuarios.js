@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // CARGAR PARTICIPANTES DESDE MYSQL
     const cargarParticipantes = () => {
-        fetch("http://localhost:8080/api/rifas/participantes")
+        fetch("https://app-rifa-production.up.railway.app/api/rifas/participantes")
             .then(response => {
                 if (!response.ok) {
                     throw new Error("No se pudieron cargar los participantes.");
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
             badge.style.cursor = "pointer";
             badge.title = "Descargar boleta";
             badge.addEventListener("click", () => {
-                window.open(`http://localhost:8080/api/boletas/${numero}`, "_blank");
+                window.open(`https://app-rifa-production.up.railway.app/api/boletas/${numero}`, "_blank");
             });
             containerNumeros.appendChild(badge);
         });
@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
             estadoAnterior === "debe" &&
             (nuevoEstadoPago === "pagado" || nuevoEstadoPago === "pago")
         ) {
-            fetch(`http://localhost:8080/api/rifas/actualizar-pago/${usuario.telefono}`, {
+            fetch(`https://app-rifa-production.up.railway.app/api/rifas/actualizar-pago/${usuario.telefono}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (usuarioSeleccionadoIndex === null) return;
 
         const usuario = usuariosRegistrados[usuarioSeleccionadoIndex];
-        fetch(`http://localhost:8080/api/rifas/recordatorio/${usuario.telefono}`)
+        fetch(`https://app-rifa-production.up.railway.app/api/rifas/recordatorio/${usuario.telefono}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("No se pudo generar el recordatorio.");

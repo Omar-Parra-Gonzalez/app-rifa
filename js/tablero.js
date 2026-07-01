@@ -66,7 +66,7 @@ async function procesarLogin() {
     const password = document.getElementById("login-pass").value;
     const errorMsg = document.getElementById("login-error-msg");
 
-    const URL_BAKEND = "http://localhost:8080/api/auth/login";
+    const URL_BAKEND = "https://app-rifa-production.up.railway.app/api/auth/login";
 
     try {
         const respuesta = await fetch(URL_BAKEND, {
@@ -79,6 +79,7 @@ async function procesarLogin() {
 
         if (respuesta.ok && (resultado.autorizado === undefined || resultado.autorizado)) {
             localStorage.setItem("acceso_rifa_valido", "true");
+            localStorage.setItem("token_seguridad_rifa", resultado.token);
 
             // Se remueve el modal de la pantalla para que pueda usar la app
             document.getElementById("modal-login-overlay").remove();
@@ -119,8 +120,8 @@ function inicializarAplicacion() {
     let numerosElegidos = [];
 
     // URLs de la API en Spring Boot
-    const API_URL_OCUPADOS = "http://localhost:8080/api/rifas/ocupados";
-    const API_URL_REGISTRAR = "http://localhost:8080/api/rifas/registrar";
+    const API_URL_OCUPADOS = "https://app-rifa-production.up.railway.app/api/rifas/ocupados";
+    const API_URL_REGISTRAR = "https://app-rifa-production.up.railway.app/api/rifas/registrar";
 
     // FUNCIÓN AUXILIAR PARA PINTAR EL MODAL DE BLOQUEO 
     const mostrarPantallaBloqueo = () => {
@@ -148,6 +149,7 @@ function inicializarAplicacion() {
             if (response.status === 403) {
                 // Si el tiempo expiró, destruimos el token para obligarlo a loguearse de nuevo en la reactivación
                 localStorage.removeItem("acceso_rifa_valido");
+                localStorage.removeItem("token_seguridad_rifa");
                 mostrarPantallaBloqueo();
                 throw new Error("Aplicación bloqueada en el servidor.");
             }

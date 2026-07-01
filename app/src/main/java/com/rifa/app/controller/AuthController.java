@@ -23,7 +23,15 @@ public class AuthController {
         String passwordIngresada = credenciales.get("password");
 
         if (usuarioCorrecto.equals(usuarioIngresado) && passwordCorrecta.equals(passwordIngresada)) {
-            return ResponseEntity.ok(Map.of("mensaje", "Acceso concedido", "autorizado", true));
+            // Generamos un Token simulado seguro (puedes usar una clave fija para validar más fácil)
+            String tokenSecreto = "TokenFijoDeSeguridadRifa2026_XYZ";
+
+            // Le devolvemos el token al dispositivo
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Acceso concedido",
+                    "autorizado", true,
+                    "token", tokenSecreto
+            ));
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

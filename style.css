@@ -403,7 +403,6 @@ body.modo-captura-activo .rifa-container {
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
-    /* 🌟 Cambiado de space-between a flex-start para que no empuje los elementos hacia los extremos */
     box-sizing: border-box !important;
 }
 
@@ -420,7 +419,6 @@ body.modo-captura-activo .titulo p {
     font-size: 1.0rem !important;
     font-style: italic !important;
     margin-bottom: 5px !important;
-    /* 🌟 Reducido de 25px a 5px para pegar la tabla al texto de arriba */
     text-align: center;
 }
 
@@ -429,7 +427,6 @@ body.modo-captura-activo .grid {
     grid-template-columns: repeat(10, 1fr) !important;
     gap: 3px !important;
     margin: 5px 0 15px 0 !important;
-    /* 🌟 Controla el espacio superior (5px) e inferior (15px) de la tabla */
 }
 
 body.modo-captura-activo .grid div {
@@ -443,14 +440,12 @@ body.modo-captura-activo .footer-rifa h2 {
     font-size: 1.6rem !important;
     line-height: 1.2 !important;
     margin: 0 0 3px 0 !important;
-    /* 🌟 Forzamos a que no tenga margen superior heredado */
 }
 
 body.modo-captura-activo .footer-rifa p {
     font-size: 1.2rem !important;
     line-height: 1.2 !important;
     margin: 0 !important;
-    /* 🌟 Quitamos márgenes fantasmas del párrafo del footer */
 }
 
 body.modo-captura-activo .contenedor-boton,
