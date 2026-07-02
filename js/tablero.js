@@ -1,15 +1,11 @@
-// =========================================================================
 // CONTROL DE ACCESO Y LOGIN (Se ejecuta primero al cargar la página)
-// =========================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Al cargar la página verificamos si ya tiene el pase de entrada
     const sesionActiva = localStorage.getItem("acceso_rifa_valido");
 
     if (!sesionActiva) {
         mostrarModalLogin();
     } else {
-        // Si ya está logueado, arranca el tablero y las APIs directamente
         inicializarAplicacion();
     }
 });
@@ -54,10 +50,7 @@ function mostrarModalLogin() {
         </div>
     `;
 
-    // se inserta el modal directamente al cuerpo del HTML
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-    // se detecta el evento click del botón de ingresar
     document.getElementById("btn-ingresar-rifa").addEventListener("click", procesarLogin);
 }
 
@@ -66,7 +59,8 @@ async function procesarLogin() {
     const password = document.getElementById("login-pass").value;
     const errorMsg = document.getElementById("login-error-msg");
 
-    const URL_BAKEND = "https://app-rifa-production.up.railway.app/api/auth/login";
+    // Ajustado a Localhost
+    const URL_BAKEND = "http://localhost:8080/api/auth/login";
 
     try {
         const respuesta = await fetch(URL_BAKEND, {
@@ -119,9 +113,9 @@ function inicializarAplicacion() {
     let casillasSeleccionadas = [];
     let numerosElegidos = [];
 
-    // URLs de la API en Spring Boot
-    const API_URL_OCUPADOS = "https://app-rifa-production.up.railway.app/api/rifas/ocupados";
-    const API_URL_REGISTRAR = "https://app-rifa-production.up.railway.app/api/rifas/registrar";
+    // URLs de la API ajustadas a Localhost
+    const API_URL_OCUPADOS = "http://localhost:8080/api/rifas/ocupados";
+    const API_URL_REGISTRAR = "http://localhost:8080/api/rifas/registrar";
 
     // FUNCIÓN AUXILIAR PARA PINTAR EL MODAL DE BLOQUEO 
     const mostrarPantallaBloqueo = () => {
@@ -142,9 +136,14 @@ function inicializarAplicacion() {
         `;
     };
 
-    // Bloquear números consultando la Base de Datos mediante Spring Boot
+    // Bloquear números consultando la Base de Datos mediante Spring Boot (Con Token)
     const todosLosDivs = grid.querySelectorAll("div");
-    fetch(API_URL_OCUPADOS)
+    fetch(API_URL_OCUPADOS, {
+        method: "GET",
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
+        }
+    })
         .then(response => {
             if (response.status === 403) {
                 // Si el tiempo expiró, destruimos el token para obligarlo a loguearse de nuevo en la reactivación
@@ -228,7 +227,7 @@ function inicializarAplicacion() {
         }
     });
 
-    // REGISTRAR DATOS
+    // REGISTRAR DATOS (Con Token)
     btnGuardar.addEventListener("click", () => {
         const nombreVal = inputNombre.value.trim();
         const telefonoVal = inputTelefono.value.trim();
@@ -265,7 +264,8 @@ function inicializarAplicacion() {
         fetch(API_URL_REGISTRAR, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
             },
             body: JSON.stringify(datosCompra)
         })
@@ -335,13 +335,15 @@ function inicializarAplicacion() {
             }, 100);
         });
     }
-    // =========================================================================
-    // REVISIÓN AUTOMÁTICA EN TIEMPO REAL (Evita dejar la página abierta para siempre)
-    // =========================================================================
 
-    // Ejecuta una revisión en segundo plano cada minuto (60000 milisegundos)
+    // REVISIÓN AUTOMÁTICA EN TIEMPO REAL
     setInterval(() => {
-        fetch(API_URL_OCUPADOS)
+        fetch(API_URL_OCUPADOS, {
+            method: "GET",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
+            }
+        })
             .then(response => {
                 if (response.status === 403) {
                     localStorage.removeItem("acceso_rifa_valido");

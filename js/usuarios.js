@@ -1,25 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // FUNCIÓN PARA BLOQUEAR EL BOTÓN EN LOCALSTORAGE
-    const bloquearRecordatorioPorUnaHora = (telefono) => {
-        const tiempoDesbloqueo = Date.now() + (60 * 60 * 1000); // Hora actual + 1 hora 
-        localStorage.setItem(`bloqueo_recordatorio_${telefono}`, tiempoDesbloqueo);
-    };
-
-    // FUNCIÓN PARA VERIFICAR EL ESTADO DEL BOTÓN
-    const verificarEstadoRecordatorio = (telefono) => {
-        const tiempoDesbloqueo = localStorage.getItem(`bloqueo_recordatorio_${telefono}`);
-        if (!tiempoDesbloqueo) return true; // Si no hay registro, se puede enviar
-        if (Date.now() > parseInt(tiempoDesbloqueo)) {
-            // Si ya pasó la hora, borramos el registro y permitimos enviar
-            localStorage.removeItem(`bloqueo_recordatorio_${telefono}`);
-            return true;
-        }
-        return false; // Sigue bloqueado
-    };
     const tbody = document.getElementById("usuarios-body");
-
-    // Elementos del Modal
     const modalVer = document.getElementById("modal-ver-numeros");
     const modalTitulo = document.getElementById("modal-titulo-usuario");
     const containerNumeros = document.getElementById("modal-ver-numeros-container");
@@ -32,32 +13,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let usuariosRegistrados = [];
     let usuarioSeleccionadoIndex = null;
 
-    // RENDERIZAR TABLA
     const renderizarTabla = () => {
         tbody.innerHTML = "";
         if (usuariosRegistrados.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="3" class="text-center text-muted">No hay usuarios registrados todavía.</td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No hay usuarios registrados todavía.</td></tr>`;
             return;
         }
 
         usuariosRegistrados.forEach((usuario, index) => {
             const fila = document.createElement("tr");
             const pagoEstado = (usuario.pago || "debe").toLowerCase();
-            const btnClase =
-                pagoEstado === "pagado" || pagoEstado === "pago"
-                    ? "btn-success"
-                    : "btn-danger";
+            const btnClase = (pagoEstado === "pagado" || pagoEstado === "pago") ? "btn-success" : "btn-danger";
+
             fila.innerHTML = `
                 <td>${usuario.nombre}</td>
                 <td>${usuario.telefono}</td>
                 <td>
-                    <button
-                        class="btn ${btnClase} btn-sm w-100 fw-bold ver-numeros-btn"
-                        data-index="${index}">
+                    <button class="btn ${btnClase} btn-sm w-100 fw-bold ver-numeros-btn" data-index="${index}">
                         Ver
                     </button>
                 </td>
@@ -66,13 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    // CARGAR PARTICIPANTES DESDE MYSQL
+    // Carga de participantes apuntando a Localhost con Token de Seguridad
     const cargarParticipantes = () => {
-        fetch("https://app-rifa-production.up.railway.app/api/rifas/participantes")
+        fetch("http://localhost:8080/api/rifas/participantes", {
+            method: "GET",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
+            }
+        })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("No se pudieron cargar los participantes.");
-                }
+                if (!response.ok) throw new Error("No se pudieron cargar los participantes.");
                 return response.json();
             })
             .then(data => {
@@ -81,31 +56,23 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .catch(error => {
                 console.error(error);
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="3" class="text-center text-danger">Error cargando participantes.</td>
-                </tr>
-            `;
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error cargando participantes.</td></tr>`;
             });
     };
+
     cargarParticipantes();
 
-    // ABRIR MODAL
     tbody.addEventListener("click", (e) => {
         const botonVer = e.target.closest(".ver-numeros-btn");
-
         if (!botonVer) return;
+
         const index = botonVer.dataset.index;
         const usuario = usuariosRegistrados[index];
-
         if (!usuario) return;
+
         usuarioSeleccionadoIndex = index;
         modalTitulo.textContent = `Boletos de ${usuario.nombre}`;
 
-        const elementoAlias = document.getElementById("modal-alias-usuario");
-        if (elementoAlias) {
-            elementoAlias.textContent = usuario.alias ? `(Alias: ${usuario.alias})` : "";
-        }
         if (inputVerAlias) {
             inputVerAlias.value = usuario.alias || "Ninguno";
         }
@@ -116,47 +83,51 @@ document.addEventListener("DOMContentLoaded", () => {
             badge.classList.add("badge-numero");
             badge.textContent = numero;
             badge.style.cursor = "pointer";
-            badge.title = "Descargar boleta";
             badge.addEventListener("click", () => {
-                window.open(`https://app-rifa-production.up.railway.app/api/boletas/${numero}`, "_blank");
+                window.open(`http://localhost:8080/api/boletas/${numero}`, "_blank");
             });
             containerNumeros.appendChild(badge);
         });
 
-        selectPago.value = usuario.pago || "debe";
+        const pagoEstado = (usuario.pago || "debe").toLowerCase();
+        selectPago.value = pagoEstado;
 
-        // Ocultar o mostrar el botón según el estado de pago del usuario
-        const estadoPago = (usuario.pago || "debe").toLowerCase();
-        if (estadoPago === "pagado") {
-            btnRecordatorio.style.display = "none";
-            btnGuardarVer.style.display = "none";
-            selectPago.disabled = true;
+        // 🟢 Si el cliente ya pagó, ocultamos botones de acción y bloqueamos el select
+        if (pagoEstado === "pagado" || pagoEstado === "pago") {
+            if (btnGuardarVer) btnGuardarVer.style.display = "none";
+            if (btnRecordatorio) btnRecordatorio.style.display = "none";
+            if (selectPago) selectPago.disabled = true;
         } else {
-            btnRecordatorio.style.display = "block";
-            btnGuardarVer.style.display = "block";
-            selectPago.disabled = false;
+            // 🔴 Si debe, nos aseguramos de que todo esté visible y editable de nuevo
+            if (btnGuardarVer) btnGuardarVer.style.display = "block";
+            if (btnRecordatorio) btnRecordatorio.style.display = "block";
+            if (selectPago) selectPago.disabled = false;
 
-            if (verificarEstadoRecordatorio(usuario.telefono)) {
-                // ESTADO NORMAL: Habilitado y Amarillo
-                btnRecordatorio.disabled = false;
-                btnRecordatorio.style.backgroundColor = "#ffc107";
-                btnRecordatorio.style.color = "#000";
-                btnRecordatorio.textContent = "Recordatorio";
-            } else {
-                // ESTADO BLOQUEADO: Gris y deshabilitado
-                btnRecordatorio.disabled = true;
-                btnRecordatorio.style.backgroundColor = "#6c757d"; // Gris de espera
-                btnRecordatorio.style.color = "#fff";
-                btnRecordatorio.textContent = "Mensaje enviado (Espera 1h)";
+            // 🕒 Control del temporizador de 1 hora para el recordatorio
+            if (btnRecordatorio) {
+                const ultimoEnvio = localStorage.getItem(`recordatorio_${usuario.telefono}`);
+                const ahora = Date.now();
+                const unaHora = 60 * 60 * 1000; // 3.600.000 milisegundos
+
+                if (ultimoEnvio && (ahora - ultimoEnvio < unaHora)) {
+                    // Si no ha pasado la hora, calculamos cuántos minutos quedan para mostrar en el botón
+                    const minutosRestantes = Math.ceil((unaHora - (ahora - ultimoEnvio)) / (60 * 1000));
+                    btnRecordatorio.disabled = true;
+                    btnRecordatorio.textContent = `Esperar ${minutosRestantes} min`;
+                } else {
+                    // Si ya pasó el tiempo o es primera vez, se habilita con su texto original
+                    btnRecordatorio.disabled = false;
+                    btnRecordatorio.textContent = "Enviar Recordatorio";
+                }
             }
         }
+
         modalVer.style.display = "flex";
         setTimeout(() => {
             modalVer.classList.add("activo");
         }, 10);
     });
 
-    // CERRAR MODAL
     const cerrarModalVer = () => {
         modalVer.classList.remove("activo");
         setTimeout(() => {
@@ -166,83 +137,69 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     btnCerrarVer.addEventListener("click", cerrarModalVer);
-    modalVer.addEventListener("click", (e) => {
-        if (e.target === modalVer) {
-            cerrarModalVer();
-        }
-    });
 
-    // GUARDAR CAMBIOS DE PAGO
+    // Actualización de estado de pago en Localhost con Token de Seguridad
     btnGuardarVer.addEventListener("click", () => {
-
         if (usuarioSeleccionadoIndex === null) return;
-        const usuario = usuariosRegistrados[usuarioSeleccionadoIndex];
-        const estadoAnterior = (usuario.pago || "debe").toLowerCase();
-        const nuevoEstadoPago = selectPago.value.toLowerCase();
-        usuario.pago = nuevoEstadoPago;
-        renderizarTabla();
 
-        // Cambio DEBE -> PAGADO
-        if (
-            estadoAnterior === "debe" &&
-            (nuevoEstadoPago === "pagado" || nuevoEstadoPago === "pago")
-        ) {
-            fetch(`https://app-rifa-production.up.railway.app/api/rifas/actualizar-pago/${usuario.telefono}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                }
+        const usuario = usuariosRegistrados[usuarioSeleccionadoIndex];
+
+        fetch(`http://localhost:8080/api/rifas/actualizar-pago/${usuario.telefono}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
             }
-            )
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("No se pudo actualizar el estado.");
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log(data.textoWhatsApp);
-                    const textoCodificado = encodeURIComponent(data.textoWhatsApp);
-                    const urlWhatsApp = `https://api.whatsapp.com/send?phone=57${data.telefono}&text=${textoCodificado}`;
-                    console.log(urlWhatsApp);
-                    window.open(urlWhatsApp, "_blank");
-                    cargarParticipantes();
-                    cerrarModalVer();
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert("Error actualizando el estado de pago.");
-                });
-        } else {
-            cerrarModalVer();
-        }
-    });
-
-    // ENVIAR RECORDATORIO
-    btnRecordatorio.addEventListener("click", () => {
-        if (usuarioSeleccionadoIndex === null) return;
-
-        const usuario = usuariosRegistrados[usuarioSeleccionadoIndex];
-        fetch(`https://app-rifa-production.up.railway.app/api/rifas/recordatorio/${usuario.telefono}`)
+        })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error("No se pudo generar el recordatorio.");
-                }
+                if (!response.ok) throw new Error("No se pudo actualizar el estado de pago.");
                 return response.json();
             })
             .then(data => {
                 const textoCodificado = encodeURIComponent(data.textoWhatsApp);
                 const urlWhatsApp = `https://api.whatsapp.com/send?phone=57${data.telefono}&text=${textoCodificado}`;
                 window.open(urlWhatsApp, "_blank");
-                bloquearRecordatorioPorUnaHora(usuario.telefono);
-                btnRecordatorio.disabled = true;
-                btnRecordatorio.style.backgroundColor = "#6c757d";
-                btnRecordatorio.style.color = "#fff";
-                btnRecordatorio.textContent = "Mensaje enviado (Espera 1h)";
+                cargarParticipantes();
+                cerrarModalVer();
             })
             .catch(error => {
                 console.error(error);
-                alert("Error enviando el recordatorio.");
+                alert("Error actualizando el pago.");
             });
     });
+
+    // Envío de Recordatorio desde Localhost con Token de Seguridad
+    if (btnRecordatorio) {
+        btnRecordatorio.addEventListener("click", () => {
+            if (usuarioSeleccionadoIndex === null) return;
+            const usuario = usuariosRegistrados[usuarioSeleccionadoIndex];
+
+            fetch(`http://localhost:8080/api/rifas/recordatorio/${usuario.telefono}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("token_seguridad_rifa")
+                }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("No se pudo generar el recordatorio.");
+                    return response.json();
+                })
+                .then(data => {
+                    // 🕒 Guardamos el momento exacto en el que se procesó con éxito
+                    localStorage.setItem(`recordatorio_${usuario.telefono}`, Date.now());
+
+                    // Deshabilitamos el botón inmediatamente
+                    btnRecordatorio.disabled = true;
+                    btnRecordatorio.textContent = "Esperar 60 min";
+
+                    const textoCodificado = encodeURIComponent(data.textoWhatsApp);
+                    const urlWhatsApp = `https://api.whatsapp.com/send?phone=57${data.telefono}&text=${textoCodificado}`;
+                    window.open(urlWhatsApp, "_blank");
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert("Error al enviar el recordatorio.");
+                });
+        });
+    }
 });
